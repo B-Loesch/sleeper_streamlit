@@ -18,13 +18,13 @@ for season_id, year in zip(league_info.league_id, league_info.season):
 
 current_rosters = all_rosters[all_rosters["Season"] == league_info["season"].max()]
 
-# st.dataframe(current_rosters)
+# st.dataframe(all_rosters)
 
 all_matchups = pd.DataFrame()
 
 for id, season, playoff_start in zip(league_info.league_id, league_info.season, league_info.playoff_week_start):
     season_matchups = saf.get_matchups_season(id, season, playoff_start, all_rosters)
-
+    # there's something wrong with this function, not properly getting matchups within a week!
     all_matchups = pd.concat([all_matchups, season_matchups])
 
 # st.dataframe(all_matchups)

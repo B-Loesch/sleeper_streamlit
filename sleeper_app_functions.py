@@ -22,6 +22,7 @@ def get_league_info(current_id):
 
     return(data)
 
+@st.cache_data(persist = "disk")
 def get_all_league_info(league_id):
     """Generates a list of all league information from the sleeper api, calls the get_league_id function.
 
@@ -112,6 +113,7 @@ def get_matchups_season(league_id, season, play_off_week_start, all_rosters):
 
     return(season_matchups)
 
+@st.cache_data(persist = "disk")
 def get_roster_id(league_id, year):
     users_dict = {}
     rosters_dict = {}
@@ -138,8 +140,12 @@ def get_roster_id(league_id, year):
         print(f"Error: {rosters_response.status_code}")
 
     for i, (user, roster) in enumerate(zip(users, rosters)):
-        users_dict[i+1] = [user["display_name"], user["user_id"], roster["roster_id"], year]
+        users_dict[i+1] = [user["display_name"], user["user_id"], year]
+        rosters_dict[i+1] = [roster['owner_id'], roster['roster_id']]
 
-    users_df = pd.DataFrame.from_dict(users_dict, orient = 'index', columns=['display_name', 'user_id', 'roster_id', "Season"])
+    users_df = pd.DataFrame.from_dict(users_dict, orient = 'index', columns=['display_name', 'user_id', "Season"])
+    rosters_df = pd.DataFrame.from_dict(rosters_dict, orient = 'index', columns=['user_id', 'roster_id'])
 
-    return(users_df)
+    merged_df = pd.merge(users_df, rosters_df, on = 'user_id')
+
+    return(merged_df)
