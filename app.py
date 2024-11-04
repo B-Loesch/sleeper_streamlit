@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 import sleeper_app_functions as saf
 
-current_league_id = st.text_input("Please input your league ID:")
+# current_league_id = st.text_input("Please input your league ID:")
+current_league_id = 1073659471932538880
 
 league_info = saf.get_all_league_info(current_league_id) # dataframe with league_id, season, playoff_week_start
 
@@ -26,7 +27,7 @@ for id, season, playoff_start in zip(league_info.league_id, league_info.season, 
 
     all_matchups = pd.concat([all_matchups, season_matchups])
 
-st.dataframe(all_matchups)
+# st.dataframe(all_matchups)
 
 display_names = sorted(current_rosters.display_name.tolist())
 display_names.insert(0, "Please select a team.")
