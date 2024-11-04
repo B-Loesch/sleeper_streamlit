@@ -99,7 +99,7 @@ def get_matchups_season(league_id, season, play_off_week_start, all_rosters):
             matchups_df = matchups_df[matchups_df["matchup_id"].notnull()] # if it's playoffs, teams that aren't included still return a matchup but shouldn't be kept
 
             matchups_df_wide = matchups_df.pivot(index='matchup_id', columns='pair', values=['roster_id', 'points', 'display_name', 'user_id'])
-            matchups_df_wide.columns = [f"{col[0]}_{col[1]}" for col in matchups_df_wide.columns]
+            matchups_df_wide.columns = [f"{col[0]}_{int(col[1])}" for col in matchups_df_wide.columns]
             matchups_df_wide["season"] = season
             matchups_df_wide["week"] = week
             matchups_df_wide["match_type"] = matchups_df_wide['week'].apply(lambda x: 'Regular Season' if x < int(play_off_week_start) else 'Playoffs')
@@ -140,10 +140,16 @@ def get_roster_id(league_id, year):
         print(f"Error: {rosters_response.status_code}")
 
     for i, (user, roster) in enumerate(zip(users, rosters)):
-        users_dict[i+1] = [user["display_name"], user["user_id"], year]
+        try:
+            image_link = user["metadata"]["avatar"]
+            image_link = image_link.replace(".jpg", "")
+        except KeyError:
+            image_link = "Not found."
+
+        users_dict[i+1] = [user["display_name"], user["user_id"], image_link, year]
         rosters_dict[i+1] = [roster['owner_id'], roster['roster_id']]
 
-    users_df = pd.DataFrame.from_dict(users_dict, orient = 'index', columns=['display_name', 'user_id', "Season"])
+    users_df = pd.DataFrame.from_dict(users_dict, orient = 'index', columns=['display_name', 'user_id', "image_link","Season"])
     rosters_df = pd.DataFrame.from_dict(rosters_dict, orient = 'index', columns=['user_id', 'roster_id'])
 
     merged_df = pd.merge(users_df, rosters_df, on = 'user_id')

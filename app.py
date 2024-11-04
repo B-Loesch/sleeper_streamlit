@@ -2,6 +2,12 @@ import streamlit as st
 import pandas as pd
 import sleeper_app_functions as saf
 
+st.set_page_config(page_title=None, 
+                   page_icon=None, 
+                   layout="wide", 
+                   initial_sidebar_state="auto", 
+                   menu_items=None)
+
 # current_league_id = st.text_input("Please input your league ID:")
 current_league_id = 1073659471932538880
 
@@ -18,29 +24,38 @@ for season_id, year in zip(league_info.league_id, league_info.season):
 
 current_rosters = all_rosters[all_rosters["Season"] == league_info["season"].max()]
 
-# st.dataframe(all_rosters)
+# st.dataframe(current_rosters)
 
 all_matchups = pd.DataFrame()
 
 for id, season, playoff_start in zip(league_info.league_id, league_info.season, league_info.playoff_week_start):
-    season_matchups = saf.get_matchups_season(id, season, playoff_start, all_rosters)
-    # there's something wrong with this function, not properly getting matchups within a week!
-    all_matchups = pd.concat([all_matchups, season_matchups])
+    season_matchups = saf.get_matchups_season(id, season, playoff_start, all_rosters) # I think we're dropping some rows here!
+    all_matchups = pd.concat([all_matchups, season_matchups]) 
 
 # st.dataframe(all_matchups)
 
 display_names = sorted(current_rosters.display_name.tolist())
 display_names.insert(0, "Please select a team.")
 
+exclude_playoffs = st.checkbox("Exclude Playoffs?")
+
 col1, col2 = st.columns(2)
 with col1:
     team1 = st.selectbox("Team 1:", display_names)
+    # try:
+    #     team1_image = current_rosters[current_rosters["display_name"] == team1].at[0, "image_link"]
+    #     st.image(team1_image)
+    # except:
+    #     print("Error getting image")
 
 with col2:
-    display_names_remain = [name for name in display_names if name != team1]
+    display_names_remain = [name for name in display_names if name != team1 if name != "Please select a team."]
+    display_names_remain.insert(0, "Please select another team.")
+
     team2 = st.selectbox("Team 2:", display_names_remain)
 
-exclude_playoffs = st.checkbox("Exclude Playoffs?")
+    # team2_image = current_rosters[current_rosters["display_name"] == team2].at[0, "image_link"]
+    # st.image(team2_image)
 
 user_pair_view = (team1, team2)
 
@@ -63,8 +78,6 @@ for idx, row in pair_df.iterrows():
         pair_df.at[idx, 'points_1'] = row['points_2']
         pair_df.at[idx, 'points_2'] = row['points_1']
         
-st.dataframe(pair_df[["season", "week", "match_type", "display_name_1", "points_1", "display_name_2", "points_2", "Winner"]])
-
 team_1_record = f'{pair_df[pair_df["Winner"] == team1].shape[0]}-{pair_df[pair_df["Loser"] == team1].shape[0]}'
 team_1_pts = pair_df["points_1"].sum()
 
@@ -80,3 +93,5 @@ team_2_display = f"{team_2_delta} ({round(team_2_pts, 2)})"
 col1, col2 = st.columns(2)
 col1.metric(team1, team_1_record, team_1_display)
 col2.metric(team2, team_2_record, team_2_display)
+
+st.dataframe(pair_df[["season", "week", "match_type", "display_name_1", "points_1", "display_name_2", "points_2", "Winner"]])
