@@ -155,3 +155,33 @@ def get_roster_id(league_id, year):
     merged_df = pd.merge(users_df, rosters_df, on = 'user_id')
 
     return(merged_df)
+
+def generate_matrix(matchups, rosters, exlude_playoffs):
+    if exlude_playoffs:
+        matchups = matchups[matchups["match_type"] == "Regular Season"]
+    else:
+        matchups = matchups
+        
+    teams = sorted(set(rosters[rosters["Season"] == "2024"]['display_name']), key = str.lower)
+    records = {team: {opponent: [0, 0] for opponent in teams} for team in teams}
+
+    for _, row in matchups.iterrows():
+        team1, team2 = row['display_name_1'], row['display_name_2']
+        team1_score, team2_score = row['points_1'], row['points_2']
+
+        if team1 not in records.keys() or team2 not in records.keys():
+            continue
+        
+        if team1_score < team2_score:
+            records[team1][team2][0] += 1  # team1 wins
+            records[team2][team1][1] += 1  # team2 loses
+        else:
+            records[team1][team2][1] += 1  # team1 loses
+            records[team2][team1][0] += 1  # team2 wins
+
+    head_to_head_df = pd.DataFrame(
+    {team: {opponent: f"{wins}-{losses}" if wins or losses else "" 
+            for opponent, (wins, losses) in opponents.items()}
+     for team, opponents in records.items()})
+    
+    return(head_to_head_df)
