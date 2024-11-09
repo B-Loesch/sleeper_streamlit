@@ -156,32 +156,50 @@ def get_roster_id(league_id, year):
 
     return(merged_df)
 
-def generate_matrix(matchups, rosters, exlude_playoffs):
+def generate_matrix(matchups, rosters, exlude_playoffs, matrix_type):
     if exlude_playoffs:
         matchups = matchups[matchups["match_type"] == "Regular Season"]
     else:
         matchups = matchups
         
     teams = sorted(set(rosters[rosters["Season"] == "2024"]['display_name']), key = str.lower)
-    records = {team: {opponent: [0, 0] for opponent in teams} for team in teams}
 
-    for _, row in matchups.iterrows():
-        team1, team2 = row['display_name_1'], row['display_name_2']
-        team1_score, team2_score = row['points_1'], row['points_2']
+    if matrix_type == "Records":
+        records = {team: {opponent: [0, 0] for opponent in teams} for team in teams}
+        for _, row in matchups.iterrows():
+            team1, team2 = row['display_name_1'], row['display_name_2']
+            team1_score, team2_score = row['points_1'], row['points_2']
 
-        if team1 not in records.keys() or team2 not in records.keys():
-            continue
+            if team1 not in records.keys() or team2 not in records.keys():
+                continue
+            
+            if team1_score < team2_score:
+                records[team1][team2][0] += 1  # team1 wins
+                records[team2][team1][1] += 1  # team2 loses
+            else:
+                records[team1][team2][1] += 1  # team1 loses
+                records[team2][team1][0] += 1  # team2 wins
+
+        head_to_head_df = pd.DataFrame(
+            {team: {opponent: f"{wins}-{losses}" if wins or losses else "" 
+                    for opponent, (wins, losses) in opponents.items()}
+                    for team, opponents in records.items()})
+    else:
+        scores = {team: {opponent: 0 for opponent in teams} for team in teams}
+        for _, row in matchups.iterrows():
+            team1, team2 = row['display_name_1'], row['display_name_2']
+            team1_score, team2_score = row['points_1'], row['points_2']
+
+            if team1 not in scores.keys() or team2 not in scores.keys():
+                continue
+
+            scores[team1][team2] += team1_score
+            scores[team2][team1] += team2_score
         
-        if team1_score < team2_score:
-            records[team1][team2][0] += 1  # team1 wins
-            records[team2][team1][1] += 1  # team2 loses
-        else:
-            records[team1][team2][1] += 1  # team1 loses
-            records[team2][team1][0] += 1  # team2 wins
-
-    head_to_head_df = pd.DataFrame(
-    {team: {opponent: f"{wins}-{losses}" if wins or losses else "" 
-            for opponent, (wins, losses) in opponents.items()}
-     for team, opponents in records.items()})
+        head_to_head_df = pd.DataFrame(
+            {team: {opponent: np.round(score, 2) if score > 0 else 0
+                    for opponent, score in opponents.items()}
+                    for team, opponents in scores.items()}
+)
     
     return(head_to_head_df)

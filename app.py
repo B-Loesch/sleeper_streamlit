@@ -156,13 +156,30 @@ if team1 in sorted(current_rosters.display_name.tolist(), key = str.lower):
 
 # highlight_user = st.selectbox("Select a team to highlight:", users)
 
-head_to_head_matrix = saf.generate_matrix(all_matchups, current_rosters, exclude_playoffs)
+st.header("League Head-to-Head Stats", divider = True)
 
-st.header("League Head-to-Head Records", divider = True)
+display_option = st.selectbox("What would you like to display?", ["None", "Records", "Scores"])
 
-st.dataframe(head_to_head_matrix.style.apply(
-    lambda row: ['background-color: blue' if row.name == team1 else '' for _ in row], axis=1
-    ).apply(
-        lambda col: ['background-color: blue' if col.name == team2 else '' for _ in col], axis = 0
-    ), 
-    use_container_width=True)
+if display_option != "None":
+    head_to_head_matrix = saf.generate_matrix(all_matchups, current_rosters, exclude_playoffs, display_option)
+
+    if display_option == "Records":
+        st.dataframe(head_to_head_matrix.style.apply(
+            lambda row: ['background-color: blue' if row.name == team1 else '' for _ in row], axis=1
+            ).apply(
+                lambda col: ['background-color: blue' if col.name == team2 else '' for _ in col], axis = 0
+            ), 
+            use_container_width=True)
+        
+    if display_option == "Scores":
+        st.dataframe(
+            head_to_head_matrix.style.apply(
+                lambda x: ["background-color: blue" if (x.name == team2 and col == team1) else ""
+                           for col in x.index], axis = 1
+            ).apply(
+                lambda x: ["background-color: red" if (x.name == team1 and col == team2) else ""
+                           for col in x.index], axis = 1
+            ).format("{:.2f}")
+        )
+
+
